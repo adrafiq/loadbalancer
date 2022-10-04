@@ -19,5 +19,5 @@ func init() {
 func init() {
 	// To set defaults
 	Config.SetDefault("env", "dev")
-	Config.SetDefault("logMode", "info")
+	Config.SetDefault("logLevel", "info")
 }
