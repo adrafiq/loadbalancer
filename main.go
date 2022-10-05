@@ -16,7 +16,7 @@ func main() {
 
 func defaultHandler() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		io.WriteString(res, "Default Page")
-		res.WriteHeader(200)
+		io.WriteString(res, "preparing server. please check back in 30 seconds")
+		res.WriteHeader(503)
 	}
 }
