@@ -10,7 +10,7 @@ var logger = utils.Logger
 var config = utils.Config
 
 func main() {
-	// This code piece delibertly doesnt use default ServeMux and default Server to elaborate internals
+	// This code piece explictily declares ServeMux and default Server to elaborate internals
 	logger.Infof("Server is starting at %s ", config.GetString("port"))
 	router := http.NewServeMux()
 	router.HandleFunc("/", defaultHandler)
