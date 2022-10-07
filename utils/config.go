@@ -9,10 +9,11 @@ import (
 var Config = viper.New()
 
 func init() {
-	Config.SetConfigFile(".env")
-	Config.AddConfigPath("./")
+	Config.SetConfigFile("config.yaml")
+	Config.SetConfigType("yaml")
+	Config.AddConfigPath(".")
 	if err := Config.ReadInConfig(); err != nil {
-		panic(fmt.Errorf("couldnt find .env configuration file"))
+		panic(fmt.Errorf("couldnt find config.yaml configuration file\n", err))
 	}
 }
 
