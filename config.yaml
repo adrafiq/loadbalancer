@@ -1,10 +1,10 @@
 env: dev
-logLevel: info
+logLevel: debug
 port: 3000
 host: 
   name: localhost
   servers:
-  - server1
-  - server2
-  - server3
+  - https://www.google.com
+  - https://1.1.1.1
+  - https://www.youtube.com
   scheme: random

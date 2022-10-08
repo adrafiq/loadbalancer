@@ -24,10 +24,27 @@ func main() {
 }
 
 func defaultHandler(res http.ResponseWriter, req *http.Request) {
+	host = proxy.HostConfigured
+	// Debug output the request
 	// check if host registered
 	// get the proxy url
 	// prepare http request and send it
+	// Debug output the response
 	// copy the proxy response even error to handler response and send back
-	io.WriteString(res, "preparing server. please check back in 30 seconds")
-	res.WriteHeader(503)
+	logger.Debugf("Request %+v", req)
+	client := http.DefaultClient
+	proxyTarget, _ := host.GetNext()
+	req.URL = proxyTarget
+	req.Host = "39.45.128.173"
+	req.RequestURI = ""
+	proxyRes, err := client.Do(req)
+
+	if err != nil {
+		logger.Fatal(err)
+	} else {
+		defer proxyRes.Body.Close()
+	}
+	logger.Debugf("Response %+v", proxyRes)
+	res.WriteHeader(proxyRes.StatusCode)
+	io.Copy(res, proxyRes.Body)
 }
