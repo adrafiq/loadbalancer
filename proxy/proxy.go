@@ -23,6 +23,7 @@ type Host struct {
 }
 
 var HostConfigured Host
+var iterator int = 0
 
 func init() {
 	utils.Config.UnmarshalKey("host", &HostConfigured)
@@ -40,6 +41,13 @@ func (h *Host) GetNext() (*url.URL, error) {
 	case Random:
 		rand.Seed(time.Now().Unix())
 		return h.Servers[rand.Intn(len(h.Servers))], nil
+	case RoundRobin:
+		if iterator == len(h.Servers) {
+			iterator = 0
+		}
+		targetIndex := iterator
+		iterator++
+		return h.Servers[targetIndex], nil
 	}
 	var emptyUrl url.URL
 	return &emptyUrl, errors.New("unrecognized scheme")

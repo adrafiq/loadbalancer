@@ -5,6 +5,7 @@ import (
 	"infrastructure/loadbalancer/utils"
 	"io"
 	"net/http"
+	"strings"
 )
 
 var logger = utils.Logger
@@ -24,21 +25,20 @@ func main() {
 }
 
 func defaultHandler(res http.ResponseWriter, req *http.Request) {
-	host = proxy.HostConfigured
-	// Debug output the request
-	// check if host registered
-	// get the proxy url
-	// prepare http request and send it
-	// Debug output the response
-	// copy the proxy response even error to handler response and send back
+
 	logger.Debugf("Request %+v", req)
-	client := http.DefaultClient
+	host = proxy.HostConfigured
+	hostName := strings.Split(req.Host, ":")[0]
+	if hostName != host.Name {
+		res.WriteHeader(403)
+		io.WriteString(res, "unrecognized host")
+	}
 	proxyTarget, _ := host.GetNext()
 	req.URL = proxyTarget
-	req.Host = "39.45.128.173"
+	req.Host = "39.45.128.173" //Place holder for externla LB
 	req.RequestURI = ""
+	client := http.DefaultClient
 	proxyRes, err := client.Do(req)
-
 	if err != nil {
 		logger.Fatal(err)
 	} else {
