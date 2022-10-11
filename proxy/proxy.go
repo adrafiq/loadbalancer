@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"errors"
-	"fmt"
 	"infrastructure/loadbalancer/utils"
 	"math/rand"
 	"net/url"
@@ -33,7 +32,6 @@ func init() {
 		targetUrl, _ := url.Parse(s)
 		HostConfigured.Servers = append(HostConfigured.Servers, targetUrl)
 	}
-	fmt.Println(HostConfigured)
 }
 
 func (h *Host) GetNext() (*url.URL, error) {
