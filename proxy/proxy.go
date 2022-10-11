@@ -49,6 +49,5 @@ func (h *Host) GetNext() (*url.URL, error) {
 		iterator++
 		return h.Servers[targetIndex], nil
 	}
-	var emptyUrl url.URL
-	return &emptyUrl, errors.New("unrecognized scheme")
+	return nil, errors.New("unrecognized scheme")
 }

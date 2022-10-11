@@ -40,7 +40,10 @@ func defaultHandler(res http.ResponseWriter, req *http.Request) {
 	client := http.DefaultClient
 	proxyRes, err := client.Do(req)
 	if err != nil {
-		logger.Fatal(err)
+		logger.Error(err)
+		res.WriteHeader(403)
+		io.WriteString(res, err.Error())
+		return
 	} else {
 		defer proxyRes.Body.Close()
 	}
