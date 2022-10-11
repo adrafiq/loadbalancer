@@ -32,10 +32,11 @@ func defaultHandler(res http.ResponseWriter, req *http.Request) {
 	if hostName != host.Name {
 		res.WriteHeader(403)
 		io.WriteString(res, "unrecognized host")
+		return
 	}
 	proxyTarget, _ := host.GetNext()
-	req.URL = proxyTarget
-	req.Host = "39.45.128.173" //Place holder for externla LB
+	req.URL.Host = proxyTarget
+	req.Host = "39.45.128.173" //Place holder for exteral LB
 	req.RequestURI = ""
 	client := http.DefaultClient
 	proxyRes, err := client.Do(req)

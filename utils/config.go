@@ -22,4 +22,5 @@ func init() {
 	Config.SetDefault("env", "dev")
 	Config.SetDefault("logLevel", "info")
 	Config.SetDefault("port", 3000)
+	// Config validation
 }
