@@ -8,19 +8,15 @@ import (
 
 var Config = viper.New()
 
-func init() {
+func NewConfig() viper.Viper {
 	Config.SetConfigFile("config.yaml")
 	Config.SetConfigType("yaml")
 	Config.AddConfigPath(".")
 	if err := Config.ReadInConfig(); err != nil {
 		panic(fmt.Errorf("couldnt find config.yaml configuration file\n", err))
 	}
-}
-
-func init() {
-	// To set defaults
 	Config.SetDefault("env", "dev")
 	Config.SetDefault("logLevel", "info")
 	Config.SetDefault("port", 3000)
-	// Config validation
+	return *Config
 }

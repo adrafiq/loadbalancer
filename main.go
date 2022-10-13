@@ -8,9 +8,9 @@ import (
 	"strings"
 )
 
-var logger = utils.Logger
-var config = utils.Config
-var host = proxy.HostConfigured
+var config = utils.NewConfig()
+var logger = utils.NewLogger()
+var host = proxy.NewHost()
 
 func main() {
 	// This code piece explictily declares ServeMux and default Server to elaborate internals
