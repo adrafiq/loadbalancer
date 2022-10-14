@@ -89,9 +89,9 @@ func (h *Host) UpdateHealthyServer() {
 		res, err := client.Do(req)
 		if err != nil {
 			utils.Logger.Errorln("error in calling health endpoint", err)
-		} else {
-			defer res.Body.Close()
+			continue
 		}
+		defer res.Body.Close()
 		if res.StatusCode == 200 {
 			healthyServers = append(healthyServers, server)
 		}

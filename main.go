@@ -12,6 +12,8 @@ func init() {
 	utils.InitConfig()
 	utils.InitLogger()
 	proxy.InitHost()
+	// Make a cron schedular and send this to it
+	proxy.HostConfigured.UpdateHealthyServer()
 }
 
 func main() {
@@ -27,7 +29,6 @@ func main() {
 }
 
 func defaultHandler(res http.ResponseWriter, req *http.Request) {
-	utils.Logger.Debugf("Request %+v", req)
 	utils.Logger.Debugf("Request %+v", req)
 	if len(proxy.HostConfigured.HealthyServers) == 0 {
 		res.WriteHeader(503)
@@ -51,9 +52,8 @@ func defaultHandler(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(403)
 		io.WriteString(res, err.Error())
 		return
-	} else {
-		defer proxyRes.Body.Close()
 	}
+	defer proxyRes.Body.Close()
 	utils.Logger.Debugf("Response %+v", proxyRes)
 	res.WriteHeader(proxyRes.StatusCode)
 	io.Copy(res, proxyRes.Body)
