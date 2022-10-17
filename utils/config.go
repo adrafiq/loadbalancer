@@ -8,7 +8,7 @@ import (
 
 var Config = viper.New()
 
-func NewConfig() viper.Viper {
+func InitConfig() {
 	Config.SetConfigFile("config.yaml")
 	Config.SetConfigType("yaml")
 	Config.AddConfigPath(".")
@@ -18,5 +18,5 @@ func NewConfig() viper.Viper {
 	Config.SetDefault("env", "dev")
 	Config.SetDefault("logLevel", "info")
 	Config.SetDefault("port", 3000)
-	return *Config
+
 }

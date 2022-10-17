@@ -30,14 +30,13 @@ var serversProgress []float32
 var roundSize int
 var currentRound int
 
-func NewHost() Host {
+func InitHost() {
 	utils.Config.UnmarshalKey("host", &HostConfigured)
 	utils.Logger.Info(HostConfigured)
 	serversProgress = make([]float32, len(HostConfigured.Servers))
 	for _, v := range HostConfigured.Servers {
 		roundSize += int(v.Weight)
 	}
-	return HostConfigured
 }
 
 func (h *Host) GetNext() (string, error) {
