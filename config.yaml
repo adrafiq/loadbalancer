@@ -4,9 +4,11 @@ port: 3000
 host: 
   name: localhost
   scheme: roundrobing
+  health: /health
   servers:
   - name: www.google.com
     weight: 5
+    health: 
   - name: 1.1.1.1
     weight: 3
   - name: www.youtube.com

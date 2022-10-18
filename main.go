@@ -27,8 +27,13 @@ func main() {
 }
 
 func defaultHandler(res http.ResponseWriter, req *http.Request) {
-
 	utils.Logger.Debugf("Request %+v", req)
+	utils.Logger.Debugf("Request %+v", req)
+	if len(proxy.HostConfigured.HealthyServers) == 0 {
+		res.WriteHeader(503)
+		io.WriteString(res, "server not ready. no healthy upstream")
+		return
+	}
 	hostName := strings.Split(req.Host, ":")[0]
 	if hostName != proxy.HostConfigured.Name {
 		res.WriteHeader(403)
