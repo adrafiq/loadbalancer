@@ -11,50 +11,54 @@ import (
 func init() {
 	utils.InitConfig()
 	utils.InitLogger()
-	proxy.InitHost()
-	// Make a cron schedular and send this to it
-	proxy.HostConfigured.UpdateHealthyServer()
 }
 
 func main() {
 	// This code piece explictily declares ServeMux and default Server to elaborate internals
-	utils.Logger.Infof("Server is starting at %s ", utils.Config.GetString("port"))
+
+	hostConfigured := proxy.NewHost()
+	utils.Config.UnmarshalKey("host", &hostConfigured)
+	// Make a cron schedular and send this to it
+	hostConfigured.CheckHealth()
 	router := http.NewServeMux()
-	router.HandleFunc("/", defaultHandler)
+	router.HandleFunc("/", makeHandler(hostConfigured))
 	server := http.Server{
 		Addr:    ":" + utils.Config.GetString("port"),
 		Handler: router,
 	}
+	utils.Logger.Infof("Server is starting at %s ", utils.Config.GetString("port"))
 	utils.Logger.Fatal(server.ListenAndServe())
 }
 
-func defaultHandler(res http.ResponseWriter, req *http.Request) {
-	utils.Logger.Debugf("Request %+v", req)
-	if len(proxy.HostConfigured.HealthyServers) == 0 {
-		res.WriteHeader(503)
-		io.WriteString(res, "server not ready. no healthy upstream")
-		return
+func makeHandler(host *proxy.Host) func(res http.ResponseWriter, req *http.Request) {
+	return func(res http.ResponseWriter, req *http.Request) {
+		utils.Logger.Debugf("Request %+v", req)
+		if len(host.HealthyServers) == 0 {
+			res.WriteHeader(503)
+			io.WriteString(res, "server not ready. no healthy upstream")
+			return
+		}
+		hostName := strings.Split(req.Host, ":")[0]
+		if hostName != host.Name {
+			res.WriteHeader(403)
+			io.WriteString(res, "unrecognized host")
+			return
+		}
+		proxyTarget, _ := host.GetNext()
+		req.URL.Host = proxyTarget
+		req.Host = "39.45.128.173" //Place holder for exteral LB
+		req.RequestURI = ""
+		client := http.DefaultClient
+		proxyRes, err := client.Do(req)
+		if err != nil {
+			utils.Logger.Error(err)
+			res.WriteHeader(403)
+			io.WriteString(res, err.Error())
+			return
+		}
+		defer proxyRes.Body.Close()
+		utils.Logger.Debugf("Response %+v", proxyRes)
+		res.WriteHeader(proxyRes.StatusCode)
+		io.Copy(res, proxyRes.Body)
 	}
-	hostName := strings.Split(req.Host, ":")[0]
-	if hostName != proxy.HostConfigured.Name {
-		res.WriteHeader(403)
-		io.WriteString(res, "unrecognized host")
-		return
-	}
-	proxyTarget, _ := proxy.HostConfigured.GetNext()
-	req.URL.Host = proxyTarget
-	req.Host = "39.45.128.173" //Place holder for exteral LB
-	req.RequestURI = ""
-	client := http.DefaultClient
-	proxyRes, err := client.Do(req)
-	if err != nil {
-		utils.Logger.Error(err)
-		res.WriteHeader(403)
-		io.WriteString(res, err.Error())
-		return
-	}
-	defer proxyRes.Body.Close()
-	utils.Logger.Debugf("Response %+v", proxyRes)
-	res.WriteHeader(proxyRes.StatusCode)
-	io.Copy(res, proxyRes.Body)
 }

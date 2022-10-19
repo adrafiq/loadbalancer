@@ -21,26 +21,26 @@ type Server struct {
 	Weight float32 `yaml:"weight"`
 }
 type Host struct {
-	Name           string   `yaml:"name"`
-	Servers        []Server `yaml:"servers"`
-	HealthyServers []Server
-	Scheme         string `yaml:"scheme"`
-	Health         string `yaml:"health"`
+	Name            string   `yaml:"name"`
+	Servers         []Server `yaml:"servers"`
+	HealthyServers  []Server
+	Scheme          string `yaml:"scheme"`
+	Health          string `yaml:"health"`
+	iterator        int
+	serversProgress []float32
+	roundSize       int
+	currentRound    int
 }
 
-var HostConfigured Host
-var iterator int
-var serversProgress []float32
-var roundSize int
-var currentRound int
-
-func InitHost() {
-	utils.Config.UnmarshalKey("host", &HostConfigured)
-	utils.Logger.Info(HostConfigured)
-	serversProgress = make([]float32, len(HostConfigured.Servers))
-	for _, v := range HostConfigured.Servers {
-		roundSize += int(v.Weight)
+func (h *Host) resetState() {
+	h.serversProgress = make([]float32, len(h.HealthyServers))
+	for _, v := range h.HealthyServers {
+		h.roundSize += int(v.Weight)
 	}
+}
+
+func NewHost() *Host {
+	return new(Host)
 }
 
 // Refactor: Use closure to return a function instead of cases
@@ -50,34 +50,34 @@ func (h *Host) GetNext() (string, error) {
 		rand.Seed(time.Now().Unix())
 		return h.Servers[rand.Intn(len(h.Servers))].Name, nil
 	case RoundRobin:
-		if iterator == len(h.Servers) {
-			iterator = Reset
+		if h.iterator == len(h.Servers) {
+			h.iterator = Reset
 		}
-		targetIndex := iterator
-		iterator++
+		targetIndex := h.iterator
+		h.iterator++
 		return h.Servers[targetIndex].Name, nil
 	case WeightedRoundRobin:
-		if currentRound == roundSize {
-			serversProgress = make([]float32, len(h.Servers))
-			currentRound = Reset
+		if h.currentRound == h.roundSize {
+			h.serversProgress = make([]float32, len(h.Servers))
+			h.currentRound = Reset
 		}
-		var minProgress = serversProgress[First] / h.Servers[First].Weight
+		var minProgress = h.serversProgress[First] / h.Servers[First].Weight
 		var minProgressIndex int
 		for index, server := range h.Servers {
-			progress := serversProgress[index] / server.Weight
+			progress := h.serversProgress[index] / server.Weight
 			if progress <= minProgress {
 				minProgressIndex = index
 				minProgress = progress
 			}
 		}
-		serversProgress[minProgressIndex]++
-		currentRound++
+		h.serversProgress[minProgressIndex]++
+		h.currentRound++
 		return h.Servers[minProgressIndex].Name, nil
 	}
 	return "", errors.New("unrecognized scheme")
 }
 
-func (h *Host) UpdateHealthyServer() {
+func (h *Host) CheckHealth() {
 	var healthyServers []Server
 	scheme := "http"
 	client := http.DefaultClient
@@ -97,4 +97,5 @@ func (h *Host) UpdateHealthyServer() {
 		}
 	}
 	h.HealthyServers = healthyServers
+	h.resetState()
 }
