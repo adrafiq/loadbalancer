@@ -61,8 +61,8 @@ func (h *Host) GetNext() (string, error) {
 			h.serversProgress = make([]float32, len(h.Servers))
 			h.currentRound = Reset
 		}
-		var minProgress = h.serversProgress[First] / h.Servers[First].Weight
-		var minProgressIndex int
+		minProgress := h.serversProgress[First] / h.Servers[First].Weight
+		minProgressIndex := 0
 		for index, server := range h.Servers {
 			progress := h.serversProgress[index] / server.Weight
 			if progress <= minProgress {
@@ -82,10 +82,10 @@ func (h *Host) CheckHealth() {
 	scheme := "http"
 	client := http.DefaultClient
 	req, _ := http.NewRequest("GET", "", nil)
+	req.URL.Path = h.Health
+	req.URL.Scheme = scheme
 	for _, server := range h.Servers {
 		req.URL.Host = server.Name
-		req.URL.Path = h.Health
-		req.URL.Scheme = scheme
 		res, err := client.Do(req)
 		if err != nil {
 			utils.Logger.Errorln("error in calling health endpoint", err)
