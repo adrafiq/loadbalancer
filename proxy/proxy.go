@@ -2,10 +2,11 @@ package proxy
 
 import (
 	"errors"
-	"infrastructure/loadbalancer/utils"
 	"math/rand"
 	"net/http"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -30,6 +31,7 @@ type Host struct {
 	serversProgress []float32
 	roundSize       int
 	currentRound    int
+	logger          *logrus.Logger
 }
 
 func (h *Host) resetState() {
@@ -39,8 +41,9 @@ func (h *Host) resetState() {
 	}
 }
 
-func NewHost() *Host {
-	return new(Host)
+func NewHost(l *logrus.Logger) *Host {
+	host := Host{logger: l}
+	return &host
 }
 
 // Refactor: Use closure to return a function instead of cases
@@ -88,7 +91,7 @@ func (h *Host) CheckHealth() {
 		req.URL.Host = server.Name
 		res, err := client.Do(req)
 		if err != nil {
-			utils.Logger.Errorln("error in calling health endpoint", err)
+			h.logger.Errorln("error in calling health endpoint", err)
 			continue
 		}
 		defer res.Body.Close()

@@ -1,38 +1,40 @@
 package main
 
 import (
+	c "infrastructure/loadbalancer/config"
+	log "infrastructure/loadbalancer/log"
 	"infrastructure/loadbalancer/proxy"
-	"infrastructure/loadbalancer/utils"
 	"io"
 	"net/http"
 	"strings"
 )
 
 func init() {
-	utils.InitConfig()
-	utils.InitLogger()
+	c.InitConfig()
 }
 
-func main() {
-	// This code piece explictily declares ServeMux and default Server to elaborate internals
+var logger = log.NewLogger(c.Config.GetString("logLevel"))
 
-	hostConfigured := proxy.NewHost()
-	utils.Config.UnmarshalKey("host", &hostConfigured)
+func main() {
+	logger := log.NewLogger(c.Config.GetString("logLevel"))
+	hostConfigured := proxy.NewHost(logger)
+	c.Config.UnmarshalKey("host", &hostConfigured)
 	// Make a cron schedular and send this to it
 	hostConfigured.CheckHealth()
+	// This code piece explictily declares ServeMux and default Server to elaborate internals
 	router := http.NewServeMux()
 	router.HandleFunc("/", makeHandler(hostConfigured))
 	server := http.Server{
-		Addr:    ":" + utils.Config.GetString("port"),
+		Addr:    ":" + c.Config.GetString("port"),
 		Handler: router,
 	}
-	utils.Logger.Infof("Server is starting at %s ", utils.Config.GetString("port"))
-	utils.Logger.Fatal(server.ListenAndServe())
+	logger.Infof("Server is starting at %s ", c.Config.GetString("port"))
+	logger.Fatal(server.ListenAndServe())
 }
 
 func makeHandler(host *proxy.Host) func(res http.ResponseWriter, req *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
-		utils.Logger.Debugf("Request %+v", req)
+		logger.Debugf("Request %+v", req)
 		if len(host.HealthyServers) == 0 {
 			res.WriteHeader(503)
 			io.WriteString(res, "server not ready. no healthy upstream")
@@ -51,13 +53,13 @@ func makeHandler(host *proxy.Host) func(res http.ResponseWriter, req *http.Reque
 		client := http.DefaultClient
 		proxyRes, err := client.Do(req)
 		if err != nil {
-			utils.Logger.Error(err)
+			logger.Error(err)
 			res.WriteHeader(403)
 			io.WriteString(res, err.Error())
 			return
 		}
 		defer proxyRes.Body.Close()
-		utils.Logger.Debugf("Response %+v", proxyRes)
+		logger.Debugf("Response %+v", proxyRes)
 		res.WriteHeader(proxyRes.StatusCode)
 		io.Copy(res, proxyRes.Body)
 	}
