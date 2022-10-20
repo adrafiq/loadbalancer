@@ -17,7 +17,8 @@ This load-balancer features three routing algorithms:
 3. Weighted Round Robin
 
 ## Configurations
-The loadbalancer will read yaml configurations from the enviorments. You can specify filename in main package when you build.
+The loadbalancer will read yaml configurations from the root directory. You can specify filename in main package when you build. Default is **config.yaml**
+
 | Attributes 	|  Values 	| type
 |---	|---	|---
 |  env 	|   	dev, prod | string
@@ -27,6 +28,8 @@ The loadbalancer will read yaml configurations from the enviorments. You can spe
 |   host.health	|   healthcheck for upstream | string
 |   servers.name	| FQDN for upstream | string
 |   servers.weight	| weight for weightedRR | int
+
+
 A sample config file
 ```
 env: dev
@@ -46,12 +49,21 @@ host:
     weight: 2
 ```
 ## Progress
-~~Setup Project~~
-~~Create initializer Sequence~~
-~~Implement proxy~~
-~~Implement random, rr and weighted rr routing~~
-~~[Added Late] Refactor packages without side effects~~
-~~Add dynamic routing with healthchecks~~
-Multiple concurrent hosts
-Unit tests
-Add metrics and profiling
+* ~~Setup Project~~
+
+* ~~Create initializer Sequence~~
+
+* ~~Implement proxy~~
+
+* ~~Implement random, rr and weighted rr routing~~
+
+* ~~[Added Late] Refactor packages without side effects~~
+
+* ~~Add dynamic routing with healthchecks~~
+
+* Multiple concurrent hosts
+
+* Unit tests
+
+* Add metrics and profiling
+
