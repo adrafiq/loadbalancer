@@ -77,7 +77,7 @@ func (h *Host) GetNext() (string, error) {
 		h.currentRound++
 		return h.Servers[minProgressIndex].Name, nil
 	}
-	return "", errors.New("unrecognized scheme")
+	return "", errors.New("unrecognized scheme, check host configuration")
 }
 
 func (h *Host) CheckHealth() {

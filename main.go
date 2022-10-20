@@ -1,34 +1,30 @@
 package main
 
 import (
-	c "infrastructure/loadbalancer/config"
-	log "infrastructure/loadbalancer/log"
+	cfg "infrastructure/loadbalancer/internals/config"
+	log "infrastructure/loadbalancer/internals/log"
 	"infrastructure/loadbalancer/proxy"
 	"io"
 	"net/http"
 	"strings"
 )
 
-func init() {
-	c.InitConfig()
-}
-
-var logger = log.NewLogger(c.Config.GetString("logLevel"))
+var config = cfg.NewConfig("config.yaml")
+var logger = log.NewLogger(config.GetString("logLevel"))
 
 func main() {
-	logger := log.NewLogger(c.Config.GetString("logLevel"))
 	hostConfigured := proxy.NewHost(logger)
-	c.Config.UnmarshalKey("host", &hostConfigured)
+	config.UnmarshalKey("host", &hostConfigured)
 	// Make a cron schedular and send this to it
 	hostConfigured.CheckHealth()
 	// This code piece explictily declares ServeMux and default Server to elaborate internals
 	router := http.NewServeMux()
 	router.HandleFunc("/", makeHandler(hostConfigured))
 	server := http.Server{
-		Addr:    ":" + c.Config.GetString("port"),
+		Addr:    ":" + config.GetString("port"),
 		Handler: router,
 	}
-	logger.Infof("Server is starting at %s ", c.Config.GetString("port"))
+	logger.Infof("Server is starting at %s ", config.GetString("port"))
 	logger.Fatal(server.ListenAndServe())
 }
 
