@@ -55,22 +55,21 @@ func (h *Host) GetNext() (string, error) {
 	switch h.Scheme {
 	case Random:
 		rand.Seed(time.Now().Unix())
-		return h.Servers[rand.Intn(len(h.Servers))].Name, nil
+		return h.HealthyServers[rand.Intn(len(h.HealthyServers))].Name, nil
 	case RoundRobin:
-		if h.iterator == len(h.Servers) {
+		if h.iterator == len(h.HealthyServers) {
 			h.iterator = Reset
 		}
 		targetIndex := h.iterator
 		h.iterator++
-		return h.Servers[targetIndex].Name, nil
+		return h.HealthyServers[targetIndex].Name, nil
 	case WeightedRoundRobin:
 		if h.currentRound == h.roundSize {
-			h.serversProgress = make([]float32, len(h.Servers))
-			h.currentRound = Reset
+			h.resetState()
 		}
-		minProgress := h.serversProgress[First] / h.Servers[First].Weight
+		minProgress := h.serversProgress[First] / h.HealthyServers[First].Weight
 		minProgressIndex := 0
-		for index, server := range h.Servers {
+		for index, server := range h.HealthyServers {
 			progress := h.serversProgress[index] / server.Weight
 			if progress <= minProgress {
 				minProgressIndex = index
@@ -79,7 +78,7 @@ func (h *Host) GetNext() (string, error) {
 		}
 		h.serversProgress[minProgressIndex]++
 		h.currentRound++
-		return h.Servers[minProgressIndex].Name, nil
+		return h.HealthyServers[minProgressIndex].Name, nil
 	}
 	return "", errors.New("unrecognized scheme, check host configuration")
 }
