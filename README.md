@@ -1,5 +1,5 @@
 # loadbalancer
-A generic loadbalancer built on GoLang to help learn go and its concurrency. To register a host, it needs a list of upstream servers, hostname, port, healthcheck and routing algorithm to be used for that hosts. Multiple hosts can be registered at a time. The healthchecks dynamically update the available collection of upstream servers. 
+A generic loadbalancer built on GoLang to help learn go and its concurrency. To register a host, it needs a list of upstream servers, hostname, port, healthcheck and routing algorithm to be used for that host. Multiple hosts can be registered at a time. The healthchecks dynamically update the available collection of upstream servers. 
 
 ## Setup
 Build: 
