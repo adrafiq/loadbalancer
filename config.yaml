@@ -5,6 +5,7 @@ host:
   name: localhost
   scheme: roundrobin
   health: /health
+  interval: 10
   servers:
   - name: www.google.com
     weight: 5

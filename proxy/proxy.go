@@ -27,6 +27,7 @@ type Host struct {
 	HealthyServers  []Server
 	Scheme          string `yaml:"scheme"`
 	Health          string `yaml:"health"`
+	Interval        int    `yaml:"interval"`
 	iterator        int
 	serversProgress []float32
 	roundSize       int
@@ -36,8 +37,11 @@ type Host struct {
 
 func (h *Host) resetState() {
 	h.serversProgress = make([]float32, len(h.HealthyServers))
-	for _, v := range h.HealthyServers {
-		h.roundSize += int(v.Weight)
+	h.currentRound = Reset
+	h.iterator = Reset
+	h.roundSize = Reset
+	for _, server := range h.HealthyServers {
+		h.roundSize += int(server.Weight)
 	}
 }
 
@@ -51,22 +55,21 @@ func (h *Host) GetNext() (string, error) {
 	switch h.Scheme {
 	case Random:
 		rand.Seed(time.Now().Unix())
-		return h.Servers[rand.Intn(len(h.Servers))].Name, nil
+		return h.HealthyServers[rand.Intn(len(h.HealthyServers))].Name, nil
 	case RoundRobin:
-		if h.iterator == len(h.Servers) {
+		if h.iterator == len(h.HealthyServers) {
 			h.iterator = Reset
 		}
 		targetIndex := h.iterator
 		h.iterator++
-		return h.Servers[targetIndex].Name, nil
+		return h.HealthyServers[targetIndex].Name, nil
 	case WeightedRoundRobin:
 		if h.currentRound == h.roundSize {
-			h.serversProgress = make([]float32, len(h.Servers))
-			h.currentRound = Reset
+			h.resetState()
 		}
-		minProgress := h.serversProgress[First] / h.Servers[First].Weight
+		minProgress := h.serversProgress[First] / h.HealthyServers[First].Weight
 		minProgressIndex := 0
-		for index, server := range h.Servers {
+		for index, server := range h.HealthyServers {
 			progress := h.serversProgress[index] / server.Weight
 			if progress <= minProgress {
 				minProgressIndex = index
@@ -75,13 +78,14 @@ func (h *Host) GetNext() (string, error) {
 		}
 		h.serversProgress[minProgressIndex]++
 		h.currentRound++
-		return h.Servers[minProgressIndex].Name, nil
+		return h.HealthyServers[minProgressIndex].Name, nil
 	}
 	return "", errors.New("unrecognized scheme, check host configuration")
 }
 
 func (h *Host) CheckHealth() {
 	var healthyServers []Server
+	currentCount := len(h.HealthyServers)
 	scheme := "http"
 	client := http.DefaultClient
 	req, _ := http.NewRequest("GET", "", nil)
@@ -100,5 +104,7 @@ func (h *Host) CheckHealth() {
 		}
 	}
 	h.HealthyServers = healthyServers
-	h.resetState()
+	if currentCount != len(healthyServers) {
+		h.resetState()
+	}
 }

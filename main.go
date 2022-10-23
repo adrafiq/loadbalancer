@@ -7,12 +7,15 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 )
 
 var config = cfg.NewConfig("config.yaml")
 var logger = log.NewLogger(config.GetString("logLevel"))
 
 func main() {
+	var wg sync.WaitGroup
 	hostConfigured := proxy.NewHost(logger)
 	config.UnmarshalKey("host", &hostConfigured)
 	// Make a cron schedular and send this to it
@@ -24,8 +27,15 @@ func main() {
 		Addr:    ":" + config.GetString("port"),
 		Handler: router,
 	}
-	logger.Infof("Server is starting at %s ", config.GetString("port"))
-	logger.Fatal(server.ListenAndServe())
+	wg.Add(1)
+	go startServer(&server, config.GetInt("port"))
+	healthCheckChan := make(chan []proxy.Server)
+	wg.Add(1)
+	go schedular(hostConfigured.Interval, *hostConfigured, healthCheckChan)
+	for updatedServers := range healthCheckChan {
+		hostConfigured.HealthyServers = updatedServers
+	}
+	wg.Wait()
 }
 
 func makeHandler(host *proxy.Host) func(res http.ResponseWriter, req *http.Request) {
@@ -59,4 +69,18 @@ func makeHandler(host *proxy.Host) func(res http.ResponseWriter, req *http.Reque
 		res.WriteHeader(proxyRes.StatusCode)
 		io.Copy(res, proxyRes.Body)
 	}
+}
+
+func schedular(intervalSeconds int, host proxy.Host, updateChan chan []proxy.Server) {
+	intervals := time.Tick(time.Duration(intervalSeconds) * time.Second)
+	for next := range intervals {
+		logger.Debugln("health check interval ", next)
+		host.CheckHealth()
+		updateChan <- host.HealthyServers
+	}
+}
+
+func startServer(server *http.Server, port int) {
+	logger.Infof("Server is starting at %v ", port)
+	logger.Fatal(server.ListenAndServe())
 }
