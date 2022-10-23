@@ -1,9 +1,22 @@
 env: dev
 logLevel: info
-port: 3000
-host: 
-  name: localhost
+hosts: 
+- name: localhost 
+  port: 3000
   scheme: roundrobin
+  health: /health
+  interval: 10
+  servers:
+  - name: www.google.com
+    weight: 5
+    health: 
+  - name: 1.1.1.1
+    weight: 3
+  - name: www.youtube.com
+    weight: 2
+- name: localhost 
+  port: 3001
+  scheme: random
   health: /health
   interval: 10
   servers:

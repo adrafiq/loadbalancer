@@ -28,6 +28,7 @@ type Host struct {
 	Scheme          string `yaml:"scheme"`
 	Health          string `yaml:"health"`
 	Interval        int    `yaml:"interval"`
+	Port            string `yaml:"port"`
 	iterator        int
 	serversProgress []float32
 	roundSize       int
@@ -48,6 +49,10 @@ func (h *Host) resetState() {
 func NewHost(l *logrus.Logger) *Host {
 	host := Host{logger: l}
 	return &host
+}
+
+func (h *Host) SetLogger(l *logrus.Logger) {
+	h.logger = l
 }
 
 // Refactor: Use closure to return a function instead of cases

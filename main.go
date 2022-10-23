@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	cfg "infrastructure/loadbalancer/internals/config"
 	log "infrastructure/loadbalancer/internals/log"
 	"infrastructure/loadbalancer/proxy"
@@ -15,25 +16,18 @@ var config = cfg.NewConfig("config.yaml")
 var logger = log.NewLogger(config.GetString("logLevel"))
 
 func main() {
+	var hosts []proxy.Host
+	config.UnmarshalKey("hosts", &hosts)
 	var wg sync.WaitGroup
-	hostConfigured := proxy.NewHost(logger)
-	config.UnmarshalKey("host", &hostConfigured)
-	// Make a cron schedular and send this to it
-	hostConfigured.CheckHealth()
-	// This code piece explictily declares ServeMux and default Server to elaborate internals
-	router := http.NewServeMux()
-	router.HandleFunc("/", makeHandler(hostConfigured))
-	server := http.Server{
-		Addr:    ":" + config.GetString("port"),
-		Handler: router,
-	}
-	wg.Add(1)
-	go startServer(&server, config.GetInt("port"))
-	healthCheckChan := make(chan []proxy.Server)
-	wg.Add(1)
-	go schedular(hostConfigured.Interval, *hostConfigured, healthCheckChan)
-	for updatedServers := range healthCheckChan {
-		hostConfigured.HealthyServers = updatedServers
+	for _, host := range hosts {
+		host.SetLogger(logger)
+		wg.Add(1)
+		go func(h proxy.Host) {
+			wg.Add(1)
+			go startServer(&h)
+			wg.Add(1)
+			go schedular(h.Interval, &h)
+		}(host)
 	}
 	wg.Wait()
 }
@@ -71,16 +65,23 @@ func makeHandler(host *proxy.Host) func(res http.ResponseWriter, req *http.Reque
 	}
 }
 
-func schedular(intervalSeconds int, host proxy.Host, updateChan chan []proxy.Server) {
+func schedular(intervalSeconds int, host *proxy.Host) {
 	intervals := time.Tick(time.Duration(intervalSeconds) * time.Second)
 	for next := range intervals {
+
 		logger.Debugln("health check interval ", next)
 		host.CheckHealth()
-		updateChan <- host.HealthyServers
+		fmt.Println("schedular called. health checked")
 	}
 }
 
-func startServer(server *http.Server, port int) {
-	logger.Infof("Server is starting at %v ", port)
+func startServer(hostConfigured *proxy.Host) {
+	router := http.NewServeMux()
+	router.HandleFunc("/", makeHandler(hostConfigured))
+	server := http.Server{
+		Addr:    ":" + hostConfigured.Port,
+		Handler: router,
+	}
+	logger.Infof("Server is starting at %s ", hostConfigured.Port)
 	logger.Fatal(server.ListenAndServe())
 }
