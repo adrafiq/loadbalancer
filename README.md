@@ -61,7 +61,7 @@ host:
 
 * ~~Add dynamic routing with healthchecks~~
 
-* Multiple concurrent hosts
+~~~* Multiple concurrent hosts~~~
 
 * Unit tests
 
