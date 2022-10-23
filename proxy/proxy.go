@@ -90,7 +90,7 @@ func (h *Host) GetNext() (string, error) {
 
 func (h *Host) CheckHealth() {
 	var healthyServers []Server
-	currentCount := len(h.HealthyServers)
+	current := h.HealthyServers
 	scheme := "http"
 	client := http.DefaultClient
 	req, _ := http.NewRequest("GET", "", nil)
@@ -109,7 +109,14 @@ func (h *Host) CheckHealth() {
 		}
 	}
 	h.HealthyServers = healthyServers
-	if currentCount != len(healthyServers) {
+	if len(current) != len(healthyServers) {
 		h.resetState()
+		return
+	}
+	for index, server := range current {
+		if server != healthyServers[index] {
+			h.resetState()
+			return
+		}
 	}
 }
