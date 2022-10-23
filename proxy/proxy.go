@@ -27,6 +27,7 @@ type Host struct {
 	HealthyServers  []Server
 	Scheme          string `yaml:"scheme"`
 	Health          string `yaml:"health"`
+	Interval        int    `yaml:"interval"`
 	iterator        int
 	serversProgress []float32
 	roundSize       int
@@ -36,8 +37,11 @@ type Host struct {
 
 func (h *Host) resetState() {
 	h.serversProgress = make([]float32, len(h.HealthyServers))
-	for _, v := range h.HealthyServers {
-		h.roundSize += int(v.Weight)
+	h.currentRound = Reset
+	h.iterator = Reset
+	h.roundSize = Reset
+	for _, server := range h.HealthyServers {
+		h.roundSize += int(server.Weight)
 	}
 }
 
@@ -82,6 +86,7 @@ func (h *Host) GetNext() (string, error) {
 
 func (h *Host) CheckHealth() {
 	var healthyServers []Server
+	currentCount := len(h.HealthyServers)
 	scheme := "http"
 	client := http.DefaultClient
 	req, _ := http.NewRequest("GET", "", nil)
@@ -100,5 +105,7 @@ func (h *Host) CheckHealth() {
 		}
 	}
 	h.HealthyServers = healthyServers
-	h.resetState()
+	if currentCount != len(healthyServers) {
+		h.resetState()
+	}
 }
