@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	cfg "infrastructure/loadbalancer/internals/config"
 	log "infrastructure/loadbalancer/internals/log"
 	"infrastructure/loadbalancer/proxy"
@@ -71,7 +70,6 @@ func schedular(intervalSeconds int, host *proxy.Host) {
 
 		logger.Debugln("health check interval ", next)
 		host.CheckHealth()
-		fmt.Println("schedular called. health checked")
 	}
 }
 
