@@ -36,6 +36,11 @@ type Host struct {
 	logger          *logrus.Logger
 }
 
+// Unit is method
+// Type is command
+// Exit points
+//
+//	Check that all states have been changed of a given object.
 func (h *Host) resetState() {
 	h.serversProgress = make([]float32, len(h.HealthyServers))
 	h.currentRound = Reset
@@ -46,14 +51,33 @@ func (h *Host) resetState() {
 	}
 }
 
+// Unit is function
+// TYpe is command
+// Exit points
+//
+//	Check if the returned value should be as expected
 func NewHost(l *logrus.Logger) *Host {
 	host := Host{logger: l}
 	return &host
 }
 
+// Unit is method
+// TYpe is command
+// Exit points
+//
+//	Check if the state has been changed as exptected
+
 func (h *Host) SetLogger(l *logrus.Logger) {
 	h.logger = l
 }
+
+// Unit is method
+// TYpe is query
+// Exit points
+//	Check if random case is selected and right query is returned
+//	check if roundrobin case is selected and right query is returned
+// check if weightedRoundRobin is selected and right query is returned
+// Check if in absence of scheme, new error is returned
 
 // Refactor: Use closure to return a function instead of cases
 func (h *Host) GetNext() (string, error) {
@@ -88,6 +112,12 @@ func (h *Host) GetNext() (string, error) {
 	return "", errors.New("unrecognized scheme, check host configuration")
 }
 
+// Unit is method
+// TYpe is both query and command
+// Exit points
+//	check if all third party are invoked with right parameters in right sequence.
+//
+
 func (h *Host) CheckHealth() {
 	var healthyServers []Server
 	current := h.HealthyServers
@@ -96,19 +126,25 @@ func (h *Host) CheckHealth() {
 	req, _ := http.NewRequest("GET", "", nil)
 	req.URL.Path = h.Health
 	req.URL.Scheme = scheme
+	// it should patch request object and call client.Do for all server list
 	for _, server := range h.Servers {
 		req.URL.Host = server.Name
 		res, err := client.Do(req)
+		// check in case of error from mock, logger is invoked
 		if err != nil {
 			h.logger.Errorln("error in calling health endpoint", err)
 			continue
 		}
+		// it should invoke body.Close by deferring
 		defer res.Body.Close()
+		// it should append server to healthyserver if response status is 200
 		if res.StatusCode == 200 {
 			healthyServers = append(healthyServers, server)
 		}
 	}
+	// it should assign new servers to current object
 	h.HealthyServers = healthyServers
+	// check wether third party is invoked on desired conditions
 	if len(current) != len(healthyServers) {
 		h.resetState()
 		return

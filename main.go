@@ -14,6 +14,12 @@ import (
 var config = cfg.NewConfig("config.yaml")
 var logger = log.NewLogger(config.GetString("logLevel"))
 
+// type is command
+// exit points
+//
+//	it should check go waitgroups are added and routines are invoked with right parameters
+//
+// it sould check wg is waited
 func main() {
 	var hosts []proxy.Host
 	config.UnmarshalKey("hosts", &hosts)
@@ -31,6 +37,17 @@ func main() {
 	wg.Wait()
 }
 
+// type is query
+// exit point
+//
+//	it returns a handler of specific signature
+//	it logs debugger request
+//
+// it responds 503 if there are no healthy servers
+// it responts 403 if host is different from the one configured
+// it sends http client request with correct parameters
+// it logs and send http 403 response back in case of client error
+// it sends response from proxy client back to original client
 func makeHandler(host *proxy.Host) func(res http.ResponseWriter, req *http.Request) {
 	return func(res http.ResponseWriter, req *http.Request) {
 		logger.Debugf("Request %+v", req)
@@ -64,15 +81,20 @@ func makeHandler(host *proxy.Host) func(res http.ResponseWriter, req *http.Reque
 	}
 }
 
+// type is command
+// exit point
+//
+//	for every send in chan interval it logs debug and invoke checkhealth
 func schedular(intervalSeconds int, host *proxy.Host) {
 	intervals := time.Tick(time.Duration(intervalSeconds) * time.Second)
 	for next := range intervals {
-
 		logger.Debugln("health check interval ", next)
 		host.CheckHealth()
 	}
 }
 
+// tyoe is command
+// it creates and server with correct parameters and invokes listen and serve
 func startServer(hostConfigured *proxy.Host) {
 	router := http.NewServeMux()
 	router.HandleFunc("/", makeHandler(hostConfigured))
