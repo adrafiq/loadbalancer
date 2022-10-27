@@ -11,7 +11,6 @@ import (
 )
 
 func TestHost(t *testing.T) {
-
 	t.Run("it creates a new host with logger", func(t *testing.T) {
 		logger := logrus.New()
 		host := NewHost(logger)
@@ -83,7 +82,7 @@ func TestHostGetHealth(t *testing.T) {
 
 func TestHostGetNext(t *testing.T) {
 	randInt := func(n int) int {
-		return 0
+		return n
 	}
 	t.Run("it returns error if routing scheme is missing", func(t *testing.T) {
 		host := Host{}
@@ -181,8 +180,12 @@ func TestHostGetNext(t *testing.T) {
 			},
 			serversProgress: []int{1, 1, 1},
 		}
+		expectedIndex := 0
+		randInt = func(n int) int {
+			return expectedIndex
+		}
 		server, _ := host.GetNext(randInt)
-		if server != host.HealthyServers[0].Name {
+		if server != host.HealthyServers[expectedIndex].Name {
 			t.Error("should return server from index specified by randInt")
 		}
 	})
