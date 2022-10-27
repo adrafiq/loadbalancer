@@ -19,7 +19,7 @@ func TestHost(t *testing.T) {
 			t.Error("expected host, got nil")
 		}
 		if host.logger != logger {
-			t.Errorf("expected host logger be equal to argument %v", host.logger)
+			t.Errorf("expected attribute logger be equal to logger passed")
 		}
 	})
 	t.Run("it adds logger to host", func(t *testing.T) {
@@ -33,47 +33,61 @@ func TestHost(t *testing.T) {
 }
 
 func TestHostGetHealth(t *testing.T) {
-	t.Run("it invokes http health check for servers and add them to healthyservers", func(t *testing.T) {
-
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		}))
-		serverAddress := strings.Split(server.URL, "//")[1]
-		defer server.Close()
-		logger := logrus.New()
-		host := Host{
-			Name:     "localhost",
-			Scheme:   RoundRobin,
-			Port:     "3000",
-			Health:   "/health",
-			Interval: 10,
-			Servers: []Server{
-				{Name: serverAddress},
-				{Name: serverAddress},
-			},
-			iterator:     1,
-			roundSize:    1,
-			currentRound: 2,
-		}
-		host.SetLogger(logger)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	serverAddress := strings.Split(server.URL, "//")[1]
+	defer server.Close()
+	logger := logrus.New()
+	host := Host{
+		Name:     "localhost",
+		Scheme:   RoundRobin,
+		Port:     "3000",
+		Health:   "/health",
+		Interval: 10,
+		Servers: []Server{
+			{Name: serverAddress},
+			{Name: serverAddress},
+		},
+		iterator:     1,
+		roundSize:    1,
+		currentRound: 2,
+	}
+	host.SetLogger(logger)
+	t.Run("it adds servers to healthy list, if healthcheck returns http 200", func(t *testing.T) {
 		host.CheckHealth()
 		if len(host.HealthyServers) < 1 {
 			t.Error("healthy servers list should have updated")
 		}
+	})
+	t.Run("it resets state when HealthyServers were updated", func(t *testing.T) {
+		host.CheckHealth()
 		if !(host.iterator == 0 ||
 			host.currentRound == 0 ||
 			host.roundSize == 0 ||
 			reflect.DeepEqual(host.serversProgress, []float32{})) {
-			t.Error("the state was not reset, when heatlhservers were updated")
+			t.Error("the state was not reset")
 		}
-
+	})
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	t.Run("it doesnot add servers for which healthcheck doesnt return http 200", func(t *testing.T) {
+		host.CheckHealth()
+		host.HealthyServers = []Server{}
+		if len(host.HealthyServers) > 1 {
+			t.Error("unhealthy servers should'nt be added")
+		}
 	})
 }
 
-func TestGetNext(t *testing.T) {
+func TestHostGetNext(t *testing.T) {
+	randInt := func(n int) int {
+		return 0
+	}
 	t.Run("it returns error if routing scheme is missing", func(t *testing.T) {
 		host := Host{}
-		if _, err := host.GetNext(); err == nil {
+		if _, err := host.GetNext(randInt); err == nil {
 			t.Errorf("should return error in case of missing scheme")
 		}
 	})
@@ -88,7 +102,7 @@ func TestGetNext(t *testing.T) {
 			},
 			iterator: 1,
 		}
-		server, _ := host.GetNext()
+		server, _ := host.GetNext(randInt)
 		if server != host.HealthyServers[1].Name {
 			t.Errorf("should return server from index specified by iterator")
 		}
@@ -108,7 +122,7 @@ func TestGetNext(t *testing.T) {
 			},
 			serversProgress: []float32{1, 1, 1},
 		}
-		server, _ := host.GetNext()
+		server, _ := host.GetNext(randInt)
 		expectedServer := 2
 		if server != host.HealthyServers[expectedServer].Name {
 			t.Errorf("should return first server with least progress")
@@ -127,15 +141,9 @@ func TestGetNext(t *testing.T) {
 			},
 			serversProgress: []float32{1, 1, 1},
 		}
-		server, _ := host.GetNext()
-		serverAsExpected := false
-		for _, s := range host.HealthyServers {
-			if server == s.Name {
-				serverAsExpected = true
-			}
-		}
-		if !serverAsExpected {
-			t.Error("server should have been from healthservers")
+		server, _ := host.GetNext(randInt)
+		if server != host.HealthyServers[0].Name {
+			t.Error("should return server from index specified by randInt")
 		}
 	})
 }
