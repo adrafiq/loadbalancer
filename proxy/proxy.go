@@ -17,6 +17,11 @@ const (
 	Reset              = 0
 )
 
+type LoadBalancer interface {
+	resetState()
+	GetNext() (string, error)
+}
+
 type Server struct {
 	Name   string  `yaml:"name"`
 	Weight float32 `yaml:"weight"`
@@ -122,8 +127,8 @@ func (h *Host) CheckHealth() {
 	var healthyServers []Server
 	current := h.HealthyServers
 	scheme := "http"
-	client := http.DefaultClient
 	req, _ := http.NewRequest("GET", "", nil)
+	client := http.DefaultClient
 	req.URL.Path = h.Health
 	req.URL.Scheme = scheme
 	// it should patch request object and call client.Do for all server list
@@ -152,7 +157,6 @@ func (h *Host) CheckHealth() {
 	for index, server := range current {
 		if server != healthyServers[index] {
 			h.resetState()
-			return
 		}
 	}
 }
