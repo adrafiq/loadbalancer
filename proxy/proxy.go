@@ -21,8 +21,8 @@ type LoadBalancer interface {
 }
 
 type Server struct {
-	Name   string  `yaml:"name"`
-	Weight float32 `yaml:"weight"`
+	Name   string `yaml:"name"`
+	Weight int    `yaml:"weight"`
 }
 type Host struct {
 	Name            string   `yaml:"name"`
@@ -32,17 +32,17 @@ type Host struct {
 	Health          string `yaml:"health"`
 	Interval        int    `yaml:"interval"`
 	Port            string `yaml:"port"`
-	iterator        int
-	serversProgress []float32
+	cursor          int
+	serversProgress []int
 	roundSize       int
 	currentRound    int
 	logger          *logrus.Logger
 }
 
 func (h *Host) resetState() {
-	h.serversProgress = make([]float32, len(h.HealthyServers))
+	h.serversProgress = make([]int, len(h.HealthyServers))
 	h.currentRound = Reset
-	h.iterator = Reset
+	h.cursor = Reset
 	h.roundSize = Reset
 	for _, server := range h.HealthyServers {
 		h.roundSize += int(server.Weight)
@@ -64,11 +64,11 @@ func (h *Host) GetNext(randInt func(int) int) (string, error) {
 
 		return h.HealthyServers[randInt(len(h.HealthyServers))].Name, nil
 	case RoundRobin:
-		if h.iterator == len(h.HealthyServers) {
-			h.iterator = Reset
+		if h.cursor == len(h.HealthyServers) {
+			h.cursor = Reset
 		}
-		targetIndex := h.iterator
-		h.iterator++
+		targetIndex := h.cursor
+		h.cursor++
 		return h.HealthyServers[targetIndex].Name, nil
 	case WeightedRoundRobin:
 		if h.currentRound == h.roundSize {
