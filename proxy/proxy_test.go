@@ -55,7 +55,8 @@ func TestHostGetHealth(t *testing.T) {
 	host.SetLogger(logger)
 	t.Run("it adds servers to healthy list, if healthcheck returns http 200", func(t *testing.T) {
 		host.CheckHealth()
-		if len(host.HealthyServers) < 1 {
+		unexpected := 0
+		if len(host.HealthyServers) == unexpected {
 			t.Error("healthy servers list should have updated")
 		}
 	})
@@ -64,7 +65,7 @@ func TestHostGetHealth(t *testing.T) {
 		if !(host.cursor == 0 ||
 			host.currentRound == 0 ||
 			host.roundSize == 0 ||
-			reflect.DeepEqual(host.serversProgress, []float32{})) {
+			reflect.DeepEqual(host.serversProgress, []int{})) {
 			t.Error("the state was not reset")
 		}
 	})
@@ -74,7 +75,8 @@ func TestHostGetHealth(t *testing.T) {
 	t.Run("it doesnot add servers for which healthcheck doesnt return http 200", func(t *testing.T) {
 		host.CheckHealth()
 		host.HealthyServers = []Server{}
-		if len(host.HealthyServers) > 1 {
+		expected := 0
+		if len(host.HealthyServers) != expected {
 			t.Error("unhealthy servers should'nt be added")
 		}
 	})
@@ -100,8 +102,9 @@ func TestHostGetNext(t *testing.T) {
 			},
 			cursor: 1,
 		}
+		expectCursor := 1
 		server, _ := host.GetNext(randInt)
-		if server != host.HealthyServers[1].Name {
+		if server != host.HealthyServers[expectCursor].Name {
 			t.Errorf("should return server from index specified by cursor")
 		}
 		if host.cursor != 2 {
@@ -143,11 +146,15 @@ func TestHostGetNext(t *testing.T) {
 		server, _ := host.GetNext(randInt)
 		expectedServer := 2
 		expectedProgress := 2
+		expectedCurrentRound := 6
 		if server != host.HealthyServers[expectedServer].Name {
 			t.Errorf("should return server with least progress")
 		}
 		if host.serversProgress[expectedServer] != expectedProgress {
 			t.Errorf("should have incremented progress for returned server")
+		}
+		if host.currentRound != expectedCurrentRound {
+			t.Errorf("should have incremented current round")
 		}
 	})
 	t.Run("it resets the round when round is finished", func(t *testing.T) {
@@ -166,7 +173,8 @@ func TestHostGetNext(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		if host.currentRound != 1 {
+		expectRound := 1
+		if host.currentRound != expectRound {
 			t.Errorf("should have reset the currentRound")
 		}
 	})
