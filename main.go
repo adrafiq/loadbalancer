@@ -5,6 +5,8 @@ import (
 	log "infrastructure/loadbalancer/internals/log"
 	"infrastructure/loadbalancer/proxy"
 	"io"
+
+	"math/rand"
 	"net/http"
 	"strings"
 	"sync"
@@ -31,30 +33,40 @@ func main() {
 	wg.Wait()
 }
 
-func makeHandler(host *proxy.Host) func(res http.ResponseWriter, req *http.Request) {
+func makeHandler(
+	host *proxy.Host,
+	writeString func(w io.Writer, s string) (n int, err error),
+) func(res http.ResponseWriter, req *http.Request) {
+	rand.Seed(time.Now().Unix())
 	return func(res http.ResponseWriter, req *http.Request) {
 		logger.Debugf("Request %+v", req)
-		if len(host.HealthyServers) == 0 {
-			res.WriteHeader(503)
-			io.WriteString(res, "server not ready. no healthy upstream")
-			return
-		}
 		hostName := strings.Split(req.Host, ":")[0]
 		if hostName != host.Name {
 			res.WriteHeader(403)
-			io.WriteString(res, "unrecognized host")
+			writeString(res, "unrecognized host")
 			return
 		}
-		proxyTarget, _ := host.GetNext()
-		req.URL.Host = proxyTarget
-		req.Host = "39.45.128.173" //Place holder for exteral LB
-		req.RequestURI = ""
+		if len(host.HealthyServers) == 0 {
+			res.WriteHeader(503)
+			writeString(res, "server not ready. no healthy upstream")
+			return
+		}
+		proxyTarget, err := host.GetNext(rand.Intn)
+		if err != nil {
+			logger.Error(err)
+			res.WriteHeader(500)
+			writeString(res, "internal server error")
+		}
+		request, _ := http.NewRequest(req.Method, "", req.Body)
+		request.URL.Host = proxyTarget
+		request.URL.Scheme = "http" // only http now
+		request.URL.Path = req.URL.Path
 		client := http.DefaultClient
-		proxyRes, err := client.Do(req)
+		proxyRes, err := client.Do(request)
 		if err != nil {
 			logger.Error(err)
 			res.WriteHeader(403)
-			io.WriteString(res, err.Error())
+			writeString(res, err.Error())
 			return
 		}
 		defer proxyRes.Body.Close()
@@ -67,15 +79,16 @@ func makeHandler(host *proxy.Host) func(res http.ResponseWriter, req *http.Reque
 func schedular(intervalSeconds int, host *proxy.Host) {
 	intervals := time.Tick(time.Duration(intervalSeconds) * time.Second)
 	for next := range intervals {
-
 		logger.Debugln("health check interval ", next)
 		host.CheckHealth()
 	}
 }
 
 func startServer(hostConfigured *proxy.Host) {
+	var writeString = io.WriteString
+
 	router := http.NewServeMux()
-	router.HandleFunc("/", makeHandler(hostConfigured))
+	router.HandleFunc("/", makeHandler(hostConfigured, writeString))
 	server := http.Server{
 		Addr:    ":" + hostConfigured.Port,
 		Handler: router,

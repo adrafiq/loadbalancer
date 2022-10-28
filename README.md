@@ -2,13 +2,19 @@
 A generic loadbalancer built on GoLang to help learn go and its concurrency. To register a host, it needs a list of upstream servers, hostname, port, healthcheck and routing algorithm to be used for that host. Multiple hosts can be registered at a time. The healthchecks dynamically update the available collection of upstream servers. 
 
 ## Setup
-Build: 
+Build and Run: 
 ```
-go vet && go build -v -o $PWD/bin 
+chmod +x build.sh
+./build
 ```
 Run:
 ```
 ./bin/loadbalancer
+```
+Test:
+use the docker-compose file to bring up example servers. You can change services and edit config.yaml to your requirement
+```
+docker-compose -f ./examples/docker-compose.yaml up -d 
 ```
 ## Features
 This load-balancer features three routing algorithms:
@@ -42,12 +48,12 @@ hosts:
   health: /health
   interval: 10
   servers:
-  - name: www.google.com
+  - name: localhost:9081
     weight: 5
     health: 
-  - name: 1.1.1.1
+  - name: localhost:9082
     weight: 3
-  - name: www.youtube.com
+  - name: localhost:9083
     weight: 2
 - name: localhost 
   port: 3001
@@ -55,12 +61,12 @@ hosts:
   health: /health
   interval: 10
   servers:
-  - name: www.google.com
+  - name: localhost:9081
     weight: 5
     health: 
-  - name: 1.1.1.1
+  - name: localhost:9082
     weight: 3
-  - name: www.youtube.com
+  - name: localhost:9083
     weight: 2
 
 ```
@@ -79,6 +85,6 @@ hosts:
 
 * ~~Multiple concurrent hosts~~
 
-* Unit tests
+* ~~Unit tests~~
 
 * Add metrics and profiling

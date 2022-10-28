@@ -1,0 +1,13 @@
+services:
+  bookinfo1:
+    image: istio/examples-bookinfo-details-v1
+    ports:
+      - "9081:9080"
+  bookinfo2:
+    image: istio/examples-bookinfo-details-v1
+    ports:
+      - "9082:9080"
+  bookinfo3:
+    image: istio/examples-bookinfo-details-v1
+    ports:
+      - "9083:9080"
