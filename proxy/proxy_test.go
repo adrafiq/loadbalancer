@@ -18,7 +18,7 @@ func TestHost(t *testing.T) {
 			t.Error("expected host, got nil")
 		}
 		if host.logger != logger {
-			t.Errorf("expected attribute logger be equal to logger passed")
+			t.Errorf("attribute logger should be equal to logger passed")
 		}
 	})
 	t.Run("it adds logger to host", func(t *testing.T) {

@@ -1,0 +1,1 @@
+go vet && go build -v -o $PWD/bin  && ./bin/loadbalancer 

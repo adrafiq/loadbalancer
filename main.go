@@ -5,6 +5,8 @@ import (
 	log "infrastructure/loadbalancer/internals/log"
 	"infrastructure/loadbalancer/proxy"
 	"io"
+
+	"math/rand"
 	"net/http"
 	"strings"
 	"sync"
@@ -14,12 +16,6 @@ import (
 var config = cfg.NewConfig("config.yaml")
 var logger = log.NewLogger(config.GetString("logLevel"))
 
-// type is command
-// exit points
-//
-//	it should check go waitgroups are added and routines are invoked with right parameters
-//
-// it sould check wg is waited
 func main() {
 	var hosts []proxy.Host
 	config.UnmarshalKey("hosts", &hosts)
@@ -37,41 +33,40 @@ func main() {
 	wg.Wait()
 }
 
-// type is query
-// exit point
-//
-//	it returns a handler of specific signature
-//	it logs debugger request
-//
-// it responds 503 if there are no healthy servers
-// it responts 403 if host is different from the one configured
-// it sends http client request with correct parameters
-// it logs and send http 403 response back in case of client error
-// it sends response from proxy client back to original client
-func makeHandler(host *proxy.Host) func(res http.ResponseWriter, req *http.Request) {
+func makeHandler(
+	host *proxy.Host,
+	writeString func(w io.Writer, s string) (n int, err error),
+) func(res http.ResponseWriter, req *http.Request) {
+	rand.Seed(time.Now().Unix())
 	return func(res http.ResponseWriter, req *http.Request) {
 		logger.Debugf("Request %+v", req)
-		if len(host.HealthyServers) == 0 {
-			res.WriteHeader(503)
-			io.WriteString(res, "server not ready. no healthy upstream")
-			return
-		}
 		hostName := strings.Split(req.Host, ":")[0]
 		if hostName != host.Name {
 			res.WriteHeader(403)
-			io.WriteString(res, "unrecognized host")
+			writeString(res, "unrecognized host")
 			return
 		}
-		proxyTarget, _ := host.GetNext()
-		req.URL.Host = proxyTarget
-		req.Host = "39.45.128.173" //Place holder for exteral LB
-		req.RequestURI = ""
+		if len(host.HealthyServers) == 0 {
+			res.WriteHeader(503)
+			writeString(res, "server not ready. no healthy upstream")
+			return
+		}
+		proxyTarget, err := host.GetNext(rand.Intn)
+		if err != nil {
+			logger.Error(err)
+			res.WriteHeader(500)
+			writeString(res, "internal server error")
+		}
+		request, _ := http.NewRequest(req.Method, "", req.Body)
+		request.URL.Host = proxyTarget
+		request.URL.Scheme = "http" // only http now
+		request.URL.Path = req.URL.Path
 		client := http.DefaultClient
-		proxyRes, err := client.Do(req)
+		proxyRes, err := client.Do(request)
 		if err != nil {
 			logger.Error(err)
 			res.WriteHeader(403)
-			io.WriteString(res, err.Error())
+			writeString(res, err.Error())
 			return
 		}
 		defer proxyRes.Body.Close()
@@ -81,10 +76,6 @@ func makeHandler(host *proxy.Host) func(res http.ResponseWriter, req *http.Reque
 	}
 }
 
-// type is command
-// exit point
-//
-//	for every send in chan interval it logs debug and invoke checkhealth
 func schedular(intervalSeconds int, host *proxy.Host) {
 	intervals := time.Tick(time.Duration(intervalSeconds) * time.Second)
 	for next := range intervals {
@@ -93,11 +84,11 @@ func schedular(intervalSeconds int, host *proxy.Host) {
 	}
 }
 
-// tyoe is command
-// it creates and server with correct parameters and invokes listen and serve
 func startServer(hostConfigured *proxy.Host) {
+	var writeString = io.WriteString
+
 	router := http.NewServeMux()
-	router.HandleFunc("/", makeHandler(hostConfigured))
+	router.HandleFunc("/", makeHandler(hostConfigured, writeString))
 	server := http.Server{
 		Addr:    ":" + hostConfigured.Port,
 		Handler: router,

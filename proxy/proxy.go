@@ -17,7 +17,7 @@ const (
 
 type LoadBalancer interface {
 	resetState()
-	GetNext() (string, error)
+	GetNext(randInt func(int) int) (string, error)
 }
 
 type Server struct {

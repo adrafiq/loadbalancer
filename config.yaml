@@ -7,12 +7,12 @@ hosts:
   health: /health
   interval: 10
   servers:
-  - name: www.google.com
+  - name: localhost:9081
     weight: 5
     health: 
-  - name: 1.1.1.1
+  - name: localhost:9082
     weight: 3
-  - name: www.youtube.com
+  - name: localhost:9083
     weight: 2
 - name: localhost 
   port: 3001
@@ -20,10 +20,10 @@ hosts:
   health: /health
   interval: 10
   servers:
-  - name: www.google.com
+  - name: localhost:9081
     weight: 5
     health: 
-  - name: 1.1.1.1
+  - name: localhost:9082
     weight: 3
-  - name: www.youtube.com
+  - name: localhost:9083
     weight: 2
