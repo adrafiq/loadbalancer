@@ -34,7 +34,7 @@ func main() {
 		go func(h proxy.Host, exit chan os.Signal) {
 			serverChan := make(chan *http.Server)
 			go startServer(&h, serverChan)
-			go schedular(h.Interval, &h)
+			go schedular(&h)
 			server := <-serverChan
 			// Blocking till os.Interrupt
 			<-exit
@@ -87,8 +87,8 @@ func makeHandler(
 	}
 }
 
-func schedular(intervalSeconds int, host *proxy.Host) {
-	intervals := time.Tick(time.Duration(intervalSeconds) * time.Second)
+func schedular(host *proxy.Host) {
+	intervals := time.Tick(time.Duration(host.Interval) * time.Second)
 	for next := range intervals {
 		logger.Debugln("health check interval ", next)
 		host.CheckHealth()
