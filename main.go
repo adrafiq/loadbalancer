@@ -1,15 +1,19 @@
 package main
 
 import (
+	"context"
 	cfg "infrastructure/loadbalancer/internals/config"
 	log "infrastructure/loadbalancer/internals/log"
 	"infrastructure/loadbalancer/proxy"
 	"io"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	"math/rand"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -20,15 +24,22 @@ func main() {
 	var hosts []proxy.Host
 	config.UnmarshalKey("hosts", &hosts)
 	var wg sync.WaitGroup
-	for _, host := range hosts {
+	var hostsChan []chan os.Signal
+	for index, host := range hosts {
+		exit := make(chan os.Signal, 1)
+		signal.Notify(exit, os.Interrupt, syscall.SIGKILL)
+		hostsChan = append(hostsChan, exit)
 		host.SetLogger(logger)
 		wg.Add(1)
-		go func(h proxy.Host) {
-			wg.Add(1)
-			go startServer(&h)
-			wg.Add(1)
+		go func(h proxy.Host, exit chan os.Signal) {
+			serverChan := make(chan *http.Server)
+			go startServer(&h, serverChan)
 			go schedular(h.Interval, &h)
-		}(host)
+			server := <-serverChan
+			// Blocking till os.Interrupt
+			<-exit
+			server.Shutdown(context.Background())
+		}(host, hostsChan[index])
 	}
 	wg.Wait()
 }
@@ -84,7 +95,7 @@ func schedular(intervalSeconds int, host *proxy.Host) {
 	}
 }
 
-func startServer(hostConfigured *proxy.Host) {
+func startServer(hostConfigured *proxy.Host, serverChan chan *http.Server) {
 	var writeString = io.WriteString
 
 	router := http.NewServeMux()
@@ -93,6 +104,7 @@ func startServer(hostConfigured *proxy.Host) {
 		Addr:    ":" + hostConfigured.Port,
 		Handler: router,
 	}
+	serverChan <- &server
 	logger.Infof("Server is starting at %s ", hostConfigured.Port)
 	logger.Fatal(server.ListenAndServe())
 }
