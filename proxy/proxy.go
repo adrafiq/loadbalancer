@@ -3,6 +3,7 @@ package proxy
 import (
 	"errors"
 	"net/http"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 )
@@ -32,6 +33,7 @@ type Host struct {
 	Health          string `yaml:"health"`
 	Interval        int    `yaml:"interval"`
 	Port            string `yaml:"port"`
+	mu              sync.Mutex
 	cursor          int
 	serversProgress []int
 	roundSize       int
@@ -64,14 +66,17 @@ func (h *Host) GetNext(randInt func(int) int) (string, error) {
 
 		return h.HealthyServers[randInt(len(h.HealthyServers))].Name, nil
 	case RoundRobin:
-		// Needs mutex locks
-		if h.cursor >= len(h.HealthyServers)-1 {
+		h.mu.Lock()
+		defer h.mu.Unlock()
+		if h.cursor == len(h.HealthyServers)-1 {
 			h.cursor = Reset
 		}
 		targetIndex := h.cursor
 		h.cursor++
 		return h.HealthyServers[targetIndex].Name, nil
 	case WeightedRoundRobin:
+		h.mu.Lock()
+		defer h.mu.Unlock()
 		if h.currentRound == h.roundSize {
 			h.resetState()
 		}
