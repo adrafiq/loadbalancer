@@ -64,7 +64,8 @@ func (h *Host) GetNext(randInt func(int) int) (string, error) {
 
 		return h.HealthyServers[randInt(len(h.HealthyServers))].Name, nil
 	case RoundRobin:
-		if h.cursor == len(h.HealthyServers) {
+		// Needs mutex locks
+		if h.cursor >= len(h.HealthyServers)-1 {
 			h.cursor = Reset
 		}
 		targetIndex := h.cursor
