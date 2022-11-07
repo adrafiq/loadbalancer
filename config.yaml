@@ -16,7 +16,7 @@ hosts:
     weight: 2
 - name: localhost 
   port: 3001
-  scheme: random
+  scheme: roundrobin
   health: /health
   interval: 10
   servers:
