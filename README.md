@@ -89,4 +89,8 @@ hosts:
 
 * ~~Graceful exit~~
 
+* Add locks to routing algorithms
+
+* Stress test and attach result
+
 * Add metrics and profiling
