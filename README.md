@@ -71,30 +71,29 @@ hosts:
 
 ```
 ## Stress Test
-Routing: Weighted Round Robin
+**Routing**: Weighted Round Robin
+
 **Summary**:
->Requests: 100000
-Summary:
-  Total:	67.6856 secs
-  Slowest:	0.1333 secs
-  Fastest:	0.0005 secs
-  Average:	0.0330 secs
-  Requests/sec:	1477.4191
-  
-  Total data:	17900000 bytes
-  Size/request:	179 bytes
+>Requests: 100000<br> 
+Total:	101.7378 secs<br> 
+Slowest:	0.3187 secs<br> 
+Fastest:	0.0006 secs<br> 
+Average:	0.0496 secs<br> 
+Requests/sec:	982.9189<br> 
+<br> Total data:	17900000 bytes<br> 
+Size/request:	179 bytes
 
 **Status code distribution**:
 >[200]	100000 responses
 
 **Latency distribution**:
-> 10% in 0.0032 secs
-  25% in 0.0430 secs
-  50% in 0.0479 secs
-  75% in 0.0647 secs
-  90% in 0.0855 secs
-  95% in 0.1009 secs
-  99% in 0.1376 secs
+> 10% in 0.0031 secs<br>
+25% in 0.0428 secs<br>
+50% in 0.0478 secs<br>
+75% in 0.0645 secs<br>
+90% in 0.0857 secs<br>
+95% in 0.1009 secs<br>
+99% in 0.1380 secs<br>
 
 **Errors**:
  > 0
