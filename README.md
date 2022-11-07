@@ -87,4 +87,6 @@ hosts:
 
 * ~~Unit tests~~
 
+* ~~Graceful exit~~
+
 * Add metrics and profiling
