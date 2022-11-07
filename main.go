@@ -25,21 +25,21 @@ func main() {
 	config.UnmarshalKey("hosts", &hosts)
 	var wg sync.WaitGroup
 	var hostsChan []chan os.Signal
-	for index, host := range hosts {
+	for i := 0; i < len(hosts); i++ {
 		exit := make(chan os.Signal, 1)
 		signal.Notify(exit, os.Interrupt, syscall.SIGKILL)
 		hostsChan = append(hostsChan, exit)
-		host.SetLogger(logger)
+		hosts[i].SetLogger(logger)
 		wg.Add(1)
-		go func(h proxy.Host, exit chan os.Signal) {
+		go func(h *proxy.Host, exit chan os.Signal) {
 			serverChan := make(chan *http.Server)
-			go startServer(&h, serverChan)
-			go schedular(&h)
+			go startServer(h, serverChan)
+			go schedular(h)
 			server := <-serverChan
 			// Blocking till os.Interrupt
 			<-exit
 			server.Shutdown(context.Background())
-		}(host, hostsChan[index])
+		}(&hosts[i], hostsChan[i])
 	}
 	wg.Wait()
 }
