@@ -68,7 +68,7 @@ func (h *Host) GetNext(randInt func(int) int) (string, error) {
 	case RoundRobin:
 		h.mu.Lock()
 		defer h.mu.Unlock()
-		if h.cursor == len(h.HealthyServers)-1 {
+		if h.cursor == len(h.HealthyServers) {
 			h.cursor = Reset
 		}
 		targetIndex := h.cursor
