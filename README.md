@@ -119,4 +119,6 @@ Size/request:	179 bytes
 
 * ~~Stress test and attach result~~
 
-* Add metrics and profiling
+* ~~Add benchmarks~~
+
+* Abondon disconnected clients
