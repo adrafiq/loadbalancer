@@ -62,7 +62,7 @@ func makeHandler(
 			writeString(res, "server not ready. no healthy upstream")
 			return
 		}
-		proxyTarget, err := host.GetNext(rand.Intn)
+		proxyTarget, err := host.Next(rand.Intn)
 		if err != nil {
 			logger.Error(err)
 			res.WriteHeader(500)
