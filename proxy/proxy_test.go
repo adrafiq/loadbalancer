@@ -206,9 +206,9 @@ func BenchmarkGetNext(b *testing.B) {
 		host := Host{
 			Scheme: Random,
 			HealthyServers: []Server{
-				{Name: "server1", Weight: 1},
-				{Name: "server2", Weight: 3},
-				{Name: "server3", Weight: 6},
+				{Name: "server1"},
+				{Name: "server2"},
+				{Name: "server3"},
 			},
 			serversProgress: []int{1, 1, 1},
 		}
