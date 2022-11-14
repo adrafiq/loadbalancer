@@ -1,11 +1,13 @@
 package proxy
 
 import (
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -195,6 +197,56 @@ func TestHostGetNext(t *testing.T) {
 		server, _ := host.GetNext(randInt)
 		if server != host.HealthyServers[expectedIndex].Name {
 			t.Error("should return server from index specified by randInt")
+		}
+	})
+}
+
+func BenchmarkGetNext(b *testing.B) {
+	b.Run("it benchmarks random routing scheme", func(b *testing.B) {
+		host := Host{
+			Scheme: Random,
+			HealthyServers: []Server{
+				{Name: "server1"},
+				{Name: "server2"},
+				{Name: "server3"},
+			},
+			serversProgress: []int{1, 1, 1},
+		}
+		rand.Seed(time.Now().Unix())
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			host.GetNext(rand.Intn)
+		}
+	})
+	b.Run("it benchmarks round robin routing scheme", func(b *testing.B) {
+		host := Host{
+			Scheme: RoundRobin,
+			HealthyServers: []Server{
+				{Name: "server1"},
+				{Name: "server2"},
+				{Name: "server3"},
+			},
+			serversProgress: []int{1, 1, 1},
+		}
+		for n := 0; n < b.N; n++ {
+			host.GetNext(rand.Intn)
+		}
+	})
+	b.Run("it benchmarks weighted round robin routing scheme", func(b *testing.B) {
+		host := Host{
+			Scheme: RoundRobin,
+			HealthyServers: []Server{
+				{Name: "server1", Weight: 1},
+				{Name: "server2", Weight: 3},
+				{Name: "server3", Weight: 6},
+				{Name: "server4", Weight: 1},
+				{Name: "server5", Weight: 3},
+				{Name: "server6", Weight: 6},
+			},
+			serversProgress: []int{0, 0, 0},
+		}
+		for n := 0; n < b.N; n++ {
+			host.GetNext(rand.Intn)
 		}
 	})
 }
