@@ -60,10 +60,9 @@ func (h *Host) SetLogger(l *logrus.Logger) {
 	h.logger = l
 }
 
-func (h *Host) GetNext(randInt func(int) int) (string, error) {
+func (h *Host) Next(randInt func(int) int) (string, error) {
 	switch h.Scheme {
 	case Random:
-
 		return h.HealthyServers[randInt(len(h.HealthyServers))].Name, nil
 	case RoundRobin:
 		h.mu.Lock()
@@ -80,6 +79,7 @@ func (h *Host) GetNext(randInt func(int) int) (string, error) {
 		if h.currentRound == h.roundSize {
 			h.resetState()
 		}
+		// Finds the server least progressed
 		minProgress := h.serversProgress[First] / h.HealthyServers[First].Weight
 		minProgressIndex := 0
 		for index, server := range h.HealthyServers {

@@ -84,13 +84,13 @@ func TestHostGetHealth(t *testing.T) {
 	})
 }
 
-func TestHostGetNext(t *testing.T) {
+func TestHostNext(t *testing.T) {
 	randInt := func(n int) int {
 		return n
 	}
 	t.Run("it returns error if routing scheme is missing", func(t *testing.T) {
 		host := Host{}
-		if _, err := host.GetNext(randInt); err == nil {
+		if _, err := host.Next(randInt); err == nil {
 			t.Errorf("should return error in case of missing scheme")
 		}
 	})
@@ -105,7 +105,7 @@ func TestHostGetNext(t *testing.T) {
 			cursor: 1,
 		}
 		expectCursor := 1
-		server, _ := host.GetNext(randInt)
+		server, _ := host.Next(randInt)
 		if server != host.HealthyServers[expectCursor].Name {
 			t.Errorf("should return server from index specified by cursor")
 		}
@@ -123,7 +123,7 @@ func TestHostGetNext(t *testing.T) {
 			},
 		}
 		host.cursor = len(host.HealthyServers)
-		_, err := host.GetNext(randInt)
+		_, err := host.Next(randInt)
 		if err != nil {
 			t.Error(err)
 		}
@@ -145,7 +145,7 @@ func TestHostGetNext(t *testing.T) {
 			},
 			serversProgress: []int{1, 1, 1},
 		}
-		server, _ := host.GetNext(randInt)
+		server, _ := host.Next(randInt)
 		expectedServer := 2
 		expectedProgress := 2
 		expectedCurrentRound := 6
@@ -171,7 +171,7 @@ func TestHostGetNext(t *testing.T) {
 			},
 			serversProgress: []int{1, 1, 1},
 		}
-		_, err := host.GetNext(randInt)
+		_, err := host.Next(randInt)
 		if err != nil {
 			t.Error(err)
 		}
@@ -194,14 +194,14 @@ func TestHostGetNext(t *testing.T) {
 		randInt = func(n int) int {
 			return expectedIndex
 		}
-		server, _ := host.GetNext(randInt)
+		server, _ := host.Next(randInt)
 		if server != host.HealthyServers[expectedIndex].Name {
 			t.Error("should return server from index specified by randInt")
 		}
 	})
 }
 
-func BenchmarkGetNext(b *testing.B) {
+func BenchmarkNext(b *testing.B) {
 	b.Run("it benchmarks random routing scheme", func(b *testing.B) {
 		host := Host{
 			Scheme: Random,
@@ -215,7 +215,7 @@ func BenchmarkGetNext(b *testing.B) {
 		rand.Seed(time.Now().Unix())
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			host.GetNext(rand.Intn)
+			host.Next(rand.Intn)
 		}
 	})
 	b.Run("it benchmarks round robin routing scheme", func(b *testing.B) {
@@ -229,7 +229,7 @@ func BenchmarkGetNext(b *testing.B) {
 			serversProgress: []int{1, 1, 1},
 		}
 		for n := 0; n < b.N; n++ {
-			host.GetNext(rand.Intn)
+			host.Next(rand.Intn)
 		}
 	})
 	b.Run("it benchmarks weighted round robin routing scheme", func(b *testing.B) {
@@ -246,7 +246,7 @@ func BenchmarkGetNext(b *testing.B) {
 			serversProgress: []int{0, 0, 0},
 		}
 		for n := 0; n < b.N; n++ {
-			host.GetNext(rand.Intn)
+			host.Next(rand.Intn)
 		}
 	})
 }
