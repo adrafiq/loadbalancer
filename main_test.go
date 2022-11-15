@@ -84,8 +84,9 @@ func TestMakeHandler(t *testing.T) {
 		serverAddress := strings.Split(server.URL, "//")[1]
 
 		host = proxy.Host{
-			Name:   "localhost",
-			Scheme: proxy.Random,
+			Name:    "localhost",
+			Scheme:  proxy.Random,
+			Timeout: 10,
 			HealthyServers: []proxy.Server{
 				{Name: serverAddress},
 			},
