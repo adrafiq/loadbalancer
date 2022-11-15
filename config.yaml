@@ -4,21 +4,23 @@ hosts:
 - name: localhost 
   port: 3000
   scheme: weightedroundrobin
-  health: /
+  health: /health
   interval: 10
+  timeout: 8
   servers:
-  - name:  reqres.in
+  - name:  localhost:9081
     weight: 5
     health: 
-  - name:  reqres.in
+  - name:  localhost:9081
     weight: 3
-  - name:  reqres.in
+  - name:  localhost:9081
     weight: 2
 - name: localhost 
   port: 3001
   scheme: weightedroundrobin
   health: /health
   interval: 10
+  timeout: 8
   servers:
   - name: localhost:9081
     weight: 5

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -29,10 +30,11 @@ type Host struct {
 	Name            string   `yaml:"name"`
 	Servers         []Server `yaml:"servers"`
 	HealthyServers  []Server
-	Scheme          string `yaml:"scheme"`
-	Health          string `yaml:"health"`
-	Interval        int    `yaml:"interval"`
-	Port            string `yaml:"port"`
+	Scheme          string        `yaml:"scheme"`
+	Health          string        `yaml:"health"`
+	Interval        int           `yaml:"interval"`
+	Port            string        `yaml:"port"`
+	Timeout         time.Duration `yaml:"timeout"` //seconds
 	mu              sync.Mutex
 	cursor          int
 	serversProgress []int

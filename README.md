@@ -121,4 +121,5 @@ Size/request:	179 bytes
 
 * ~~Add benchmarks~~
 
-* Abondon disconnected clients
+* ~~Proxy Timeouts~~
+
