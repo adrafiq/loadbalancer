@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	cfg "infrastructure/loadbalancer/internals/config"
 	log "infrastructure/loadbalancer/internals/log"
 	"infrastructure/loadbalancer/proxy"
@@ -38,6 +39,7 @@ func main() {
 			server := <-serverChan
 			// Blocking till os.Interrupt
 			<-exit
+			fmt.Println("shutting down", server.Addr)
 			server.Shutdown(context.Background())
 		}(&hosts[i], hostsChan[i])
 	}
@@ -50,6 +52,8 @@ func makeHandler(
 ) func(res http.ResponseWriter, req *http.Request) {
 	rand.Seed(time.Now().Unix())
 	return func(res http.ResponseWriter, req *http.Request) {
+		ctx, cancel := context.WithTimeout(req.Context(), host.Timeout*time.Second)
+		defer cancel()
 		logger.Debugf("Request %+v", req)
 		hostName := strings.Split(req.Host, ":")[0]
 		if hostName != host.Name {
@@ -68,7 +72,7 @@ func makeHandler(
 			res.WriteHeader(500)
 			writeString(res, "internal server error")
 		}
-		request, _ := http.NewRequest(req.Method, "", req.Body)
+		request, _ := http.NewRequestWithContext(ctx, req.Method, "", req.Body)
 		request.URL.Host = proxyTarget
 		request.URL.Scheme = "http" // only http now
 		request.URL.Path = req.URL.Path
@@ -84,6 +88,7 @@ func makeHandler(
 		logger.Debugf("Response %+v", proxyRes)
 		res.WriteHeader(proxyRes.StatusCode)
 		io.Copy(res, proxyRes.Body)
+
 	}
 }
 
