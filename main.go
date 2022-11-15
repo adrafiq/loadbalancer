@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	cfg "infrastructure/loadbalancer/internals/config"
 	log "infrastructure/loadbalancer/internals/log"
 	"infrastructure/loadbalancer/proxy"
@@ -39,7 +38,6 @@ func main() {
 			server := <-serverChan
 			// Blocking till os.Interrupt
 			<-exit
-			fmt.Println("shutting down", server.Addr)
 			server.Shutdown(context.Background())
 		}(&hosts[i], hostsChan[i])
 	}
