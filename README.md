@@ -31,6 +31,7 @@ The loadbalancer will read yaml configurations from the root directory. You can 
 |  logLevel 	|   info, debug |	string
 |   host.name	|   FQDN for host|   string
 |   host.scheme	|   random, roundrobin, weightedroundrobin | string
+|   host.timeout	|   Request timeout duration in seconds | int
 |   host.health	|   healthcheck for upstream | string
 |   host.interval	|   healthcheck interval | int
 |   servers.name	| FQDN for upstream | string
@@ -47,6 +48,7 @@ hosts:
   scheme: roundrobin
   health: /health
   interval: 10
+  timeout: 8
   servers:
   - name: localhost:9081
     weight: 5
@@ -60,6 +62,7 @@ hosts:
   scheme: random
   health: /health
   interval: 10
+  timeout: 8
   servers:
   - name: localhost:9081
     weight: 5
@@ -68,7 +71,6 @@ hosts:
     weight: 3
   - name: localhost:9083
     weight: 2
-
 ```
 ## Stress Test
 **Routing**: Weighted Round Robin
