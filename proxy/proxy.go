@@ -41,6 +41,7 @@ type Host struct {
 	roundSize       int
 	currentRound    int
 	logger          *logrus.Logger
+	random          func(int) int
 }
 
 func (h *Host) resetState() {
@@ -58,14 +59,15 @@ func NewHost(l *logrus.Logger) *Host {
 	return &host
 }
 
-func (h *Host) SetLogger(l *logrus.Logger) {
+func (h *Host) SetUtils(l *logrus.Logger, r func(int) int) {
 	h.logger = l
+	h.random = r
 }
 
-func (h *Host) Next(randInt func(int) int) (string, error) {
+func (h *Host) Next() (string, error) {
 	switch h.Scheme {
 	case Random:
-		return h.HealthyServers[randInt(len(h.HealthyServers))].Name, nil
+		return h.HealthyServers[h.random(len(h.HealthyServers))].Name, nil
 	case RoundRobin:
 		h.mu.Lock()
 		defer h.mu.Unlock()

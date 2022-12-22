@@ -3,7 +3,7 @@ logLevel: info
 hosts: 
 - name: localhost 
   port: 3000
-  scheme: weightedroundrobin
+  scheme: random
   health: /health
   interval: 10
   timeout: 8
