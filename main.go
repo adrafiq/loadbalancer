@@ -38,7 +38,7 @@ func main() {
 			go server.StartServer(h, serverChan, logger)
 			go server.StartSchedular(h, logger)
 			server := <-serverChan
-			// Blocking till os.Interrupt
+			// GracefulExit: Blocking till os.Interrupt
 			<-exit
 			server.Shutdown(context.Background())
 		}(&hosts[i], hostsChan[i])
