@@ -1,12 +1,15 @@
-package main
+package server
 
 import (
 	"infrastructure/loadbalancer/proxy"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/sirupsen/logrus"
 )
 
 // Mocking http ResponseWriter
@@ -48,13 +51,14 @@ func TestMakeHandler(t *testing.T) {
 		Name: expectedName,
 	}
 	var mockResponse MockResponse
+	var logger logrus.Logger
 
 	t.Run("responts 403 if host is different from the one configured", func(t *testing.T) {
 		inputName := "different"
 		expectedStatus := 403
 		request.Host = inputName
 		expectedMessage := "unrecognized host"
-		handler := makeHandler(&host, writeString)
+		handler := makeHandler(&host, writeString, &logger)
 		contentWritten = ""
 		handler(&mockResponse, request)
 		if mockResponse.header != expectedStatus {
@@ -67,7 +71,7 @@ func TestMakeHandler(t *testing.T) {
 	t.Run("responds 503 if there are no healthy servers", func(t *testing.T) {
 		request.Host = expectedName
 		host.HealthyServers = make([]proxy.Server, 0)
-		handler := makeHandler(&host, writeString)
+		handler := makeHandler(&host, writeString, &logger)
 		expectedStatus := 503
 		handler(&mockResponse, request)
 		if mockResponse.header != expectedStatus {
@@ -91,7 +95,8 @@ func TestMakeHandler(t *testing.T) {
 				{Name: serverAddress},
 			},
 		}
-		handler := makeHandler(&host, writeString)
+		host.SetUtils(&logger, rand.Intn)
+		handler := makeHandler(&host, writeString, &logger)
 		handler(&mockResponse, req)
 
 		if mockResponse.header != http.StatusOK {

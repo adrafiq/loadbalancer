@@ -13,8 +13,9 @@ import (
 )
 
 func TestHost(t *testing.T) {
+	logger := logrus.New()
+	rand.Seed(time.Now().Unix())
 	t.Run("it creates a new host with logger", func(t *testing.T) {
-		logger := logrus.New()
 		host := NewHost(logger)
 		if host == nil {
 			t.Error("expected host, got nil")
@@ -25,8 +26,7 @@ func TestHost(t *testing.T) {
 	})
 	t.Run("it adds logger to host", func(t *testing.T) {
 		var host Host
-		logger := logrus.New()
-		host.SetLogger(logger)
+		host.SetUtils(logger, rand.Intn)
 		if host.logger != logger {
 			t.Errorf("expected host logger be equal to argument %v", host.logger)
 		}
@@ -54,7 +54,7 @@ func TestHostGetHealth(t *testing.T) {
 		roundSize:    1,
 		currentRound: 2,
 	}
-	host.SetLogger(logger)
+	host.SetUtils(logger, rand.Intn)
 	t.Run("it adds servers to healthy list, if healthcheck returns http 200", func(t *testing.T) {
 		host.CheckHealth()
 		unexpected := 0
@@ -85,12 +85,11 @@ func TestHostGetHealth(t *testing.T) {
 }
 
 func TestHostNext(t *testing.T) {
-	randInt := func(n int) int {
-		return n
-	}
+	logger := logrus.New()
+	rand.Seed(time.Now().Unix())
 	t.Run("it returns error if routing scheme is missing", func(t *testing.T) {
 		host := Host{}
-		if _, err := host.Next(randInt); err == nil {
+		if _, err := host.Next(); err == nil {
 			t.Errorf("should return error in case of missing scheme")
 		}
 	})
@@ -105,7 +104,7 @@ func TestHostNext(t *testing.T) {
 			cursor: 1,
 		}
 		expectCursor := 1
-		server, _ := host.Next(randInt)
+		server, _ := host.Next()
 		if server != host.HealthyServers[expectCursor].Name {
 			t.Errorf("should return server from index specified by cursor")
 		}
@@ -123,7 +122,7 @@ func TestHostNext(t *testing.T) {
 			},
 		}
 		host.cursor = len(host.HealthyServers)
-		_, err := host.Next(randInt)
+		_, err := host.Next()
 		if err != nil {
 			t.Error(err)
 		}
@@ -145,7 +144,7 @@ func TestHostNext(t *testing.T) {
 			},
 			serversProgress: []int{1, 1, 1},
 		}
-		server, _ := host.Next(randInt)
+		server, _ := host.Next()
 		expectedServer := 2
 		expectedProgress := 2
 		expectedCurrentRound := 6
@@ -171,7 +170,7 @@ func TestHostNext(t *testing.T) {
 			},
 			serversProgress: []int{1, 1, 1},
 		}
-		_, err := host.Next(randInt)
+		_, err := host.Next()
 		if err != nil {
 			t.Error(err)
 		}
@@ -191,10 +190,11 @@ func TestHostNext(t *testing.T) {
 			serversProgress: []int{1, 1, 1},
 		}
 		expectedIndex := 0
-		randInt = func(n int) int {
+		randInt := func(n int) int {
 			return expectedIndex
 		}
-		server, _ := host.Next(randInt)
+		host.SetUtils(logger, randInt)
+		server, _ := host.Next()
 		if server != host.HealthyServers[expectedIndex].Name {
 			t.Error("should return server from index specified by randInt")
 		}
@@ -202,6 +202,9 @@ func TestHostNext(t *testing.T) {
 }
 
 func BenchmarkNext(b *testing.B) {
+	logger := logrus.New()
+	rand.Seed(time.Now().Unix())
+	randInt := rand.Intn
 	b.Run("it benchmarks random routing scheme", func(b *testing.B) {
 		host := Host{
 			Scheme: Random,
@@ -212,10 +215,10 @@ func BenchmarkNext(b *testing.B) {
 			},
 			serversProgress: []int{1, 1, 1},
 		}
-		rand.Seed(time.Now().Unix())
+		host.SetUtils(logger, randInt)
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			host.Next(rand.Intn)
+			host.Next()
 		}
 	})
 	b.Run("it benchmarks round robin routing scheme", func(b *testing.B) {
@@ -229,7 +232,7 @@ func BenchmarkNext(b *testing.B) {
 			serversProgress: []int{1, 1, 1},
 		}
 		for n := 0; n < b.N; n++ {
-			host.Next(rand.Intn)
+			host.Next()
 		}
 	})
 	b.Run("it benchmarks weighted round robin routing scheme", func(b *testing.B) {
@@ -246,7 +249,7 @@ func BenchmarkNext(b *testing.B) {
 			serversProgress: []int{0, 0, 0},
 		}
 		for n := 0; n < b.N; n++ {
-			host.Next(rand.Intn)
+			host.Next()
 		}
 	})
 }
