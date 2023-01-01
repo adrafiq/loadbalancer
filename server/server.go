@@ -9,28 +9,36 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type server struct {
-	logger *logrus.Logger
+type Server struct {
+	host     *proxy.Host
+	logger   *logrus.Logger
+	Instance *http.Server
 }
 
-func StartSchedular(host *proxy.Host, logger *logrus.Logger) {
-	intervals := time.Tick(time.Duration(host.Interval) * time.Second)
+func NewServer(host *proxy.Host, logger *logrus.Logger) Server {
+	server := Server{
+		host:   host,
+		logger: logger,
+		Instance: &http.Server{
+			Addr: ":" + host.Port,
+		},
+	}
+	return server
+}
+
+func (s *Server) ScheduleHealthCheck() {
+	intervals := time.Tick(time.Duration(s.host.Interval) * time.Second)
 	for next := range intervals {
-		logger.Debugln("health check interval ", next)
-		host.CheckHealth()
+		s.logger.Debugln("health check interval ", next)
+		s.host.CheckHealth()
 	}
 }
 
-func StartServer(hostConfigured *proxy.Host, serverChan chan *http.Server, logger *logrus.Logger) {
+func (s *Server) Start() {
 	var writeString = io.WriteString
-
 	router := http.NewServeMux()
-	router.HandleFunc("/", makeHandler(hostConfigured, writeString, logger))
-	server := http.Server{
-		Addr:    ":" + hostConfigured.Port,
-		Handler: router,
-	}
-	serverChan <- &server
-	logger.Infof("Server is starting at %s ", hostConfigured.Port)
-	logger.Fatal(server.ListenAndServe())
+	router.HandleFunc("/", makeHandler(s.host, writeString, s.logger))
+	s.Instance.Handler = router
+	s.logger.Infof("Server is starting at %s ", s.host.Port)
+	s.logger.Fatal(s.Instance.ListenAndServe())
 }

@@ -43,7 +43,7 @@ func writeString(w io.Writer, s string) (n int, err error) {
 	return 0, nil
 }
 
-func TestMakeHandler(t *testing.T) {
+func TestHandler(t *testing.T) {
 	request, _ := http.NewRequest("GET", "", nil)
 	expectedName := "localhost"
 	request.Host = expectedName
@@ -53,7 +53,7 @@ func TestMakeHandler(t *testing.T) {
 	var mockResponse MockResponse
 	var logger logrus.Logger
 
-	t.Run("responts 403 if host is different from the one configured", func(t *testing.T) {
+	t.Run("responts 403 if host is different", func(t *testing.T) {
 		inputName := "different"
 		expectedStatus := 403
 		request.Host = inputName
