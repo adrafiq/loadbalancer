@@ -12,7 +12,6 @@ import (
 	"syscall"
 
 	"math/rand"
-	"net/http"
 	"time"
 )
 
@@ -34,13 +33,12 @@ func main() {
 		hosts[i].SetUtils(logger, rand.Intn)
 		wg.Add(1)
 		go func(h *proxy.Host, exit chan os.Signal) {
-			serverChan := make(chan *http.Server)
-			go server.StartServer(h, serverChan, logger)
-			go server.StartSchedular(h, logger)
-			server := <-serverChan
+			server := server.NewServer(h, logger)
+			go server.Start()
+			go server.ScheduleHealthCheck()
 			// GracefulExit: Blocking till os.Interrupt
 			<-exit
-			server.Shutdown(context.Background())
+			server.Instance.Shutdown(context.Background())
 		}(&hosts[i], hostsChan[i])
 	}
 	wg.Wait()
