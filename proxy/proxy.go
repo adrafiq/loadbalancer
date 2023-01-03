@@ -3,6 +3,7 @@ package proxy
 import (
 	"errors"
 	"net/http"
+	"reflect"
 	"sync"
 	"time"
 
@@ -121,13 +122,7 @@ func (h *Host) CheckHealth() {
 		}
 	}
 	h.HealthyServers = healthyServers
-	if len(current) != len(healthyServers) {
+	if !reflect.DeepEqual(current, healthyServers) {
 		h.resetState()
-		return
-	}
-	for index, server := range current {
-		if server != healthyServers[index] {
-			h.resetState()
-		}
 	}
 }
